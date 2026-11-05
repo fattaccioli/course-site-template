@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TITRE DE L'ACTIVITÉ</title>
+<meta name="description" content="UNE PHRASE QUI DÉCRIT L'ACTIVITÉ (texte de la carte dans l'index).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : colonne de lecture (~70 caractères), les simulations débordent en largeur et forment des « paillasses » */
+:root{
+  --bg:#f3f6f7; --surface:#ffffff; --well:#e8eff2; --fg:#14202a; --muted:#566874; --line:#d3dde2;
+  --accent:#0b7480; --soft:#d8eef0; --dye:#c2187a; --err:#b3261e;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"Instrument Sans","Helvetica Neue",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0c1318; --surface:#121c23; --well:#0f1a20; --fg:#e3ebef; --muted:#8fa3b0; --line:#25343e;
+    --accent:#3fc1cf; --soft:#143840; --dye:#ff4fae; --err:#ff8a80; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.6 var(--body);
+  padding:32px max(16px, env(safe-area-inset-right)) 64px max(16px, env(safe-area-inset-left))}
+main{max-width:1060px;margin:0 auto}
+.col{max-width:720px;margin:0 auto}
+h1{font:700 clamp(30px,5vw,46px)/1.05 var(--display);margin:0 0 10px;text-wrap:balance}
+h2{font:600 26px/1.2 var(--display);margin:56px 0 12px;text-wrap:balance}
+h3{font:600 19px/1.25 var(--display);margin:0}
+p{margin:0 0 14px}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.lede{font-size:18px;color:var(--muted)}
+.ex{margin:0 0 16px}
+.ex b{font-weight:600}
+.pred{border-left:3px solid var(--dye);padding:2px 0 2px 14px;margin:0 0 16px}
+.pred b{color:var(--dye)}
+ol,ul{margin:0 0 16px;padding-left:24px}
+li{margin:4px 0}
+table{border-collapse:collapse;width:100%;margin:6px 0 18px;font-size:15px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:13px;letter-spacing:.02em}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl{overflow-x:auto}
+.status{display:flex;align-items:center;gap:10px;font:500 13px var(--mono);color:var(--muted);
+  padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);margin:18px 0 0}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+.status.ready .dot{background:var(--accent)} .status.fail .dot{background:var(--err)}
+.status.load .dot{animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion: reduce){.status.load .dot{animation:none}}
+
+/* Paillasse de simulation */
+.sim{margin:28px 0 36px;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.sim-head{padding:16px 18px 12px;border-bottom:1px solid var(--line);display:grid;gap:4px}
+.sim-head .tag{font:500 11.5px var(--mono);color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.sim-head .eq{font:13px var(--mono);color:var(--muted)}
+.sim-body{display:grid;grid-template-columns:270px minmax(0,1fr);gap:0}
+@media (max-width:820px){.sim-body{grid-template-columns:minmax(0,1fr)}}
+.controls{padding:16px 18px;border-right:1px solid var(--line);display:grid;gap:13px;align-content:start}
+@media (max-width:820px){.controls{border-right:0;border-bottom:1px solid var(--line)}}
+.ctl{display:grid;gap:3px}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:500}
+.ctl output{font:12.5px var(--mono);color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+input[type=range]{width:100%;accent-color:var(--accent)}
+select{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);width:100%}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg label{display:flex;align-items:center;gap:6px;font-size:13.5px;border:1px solid var(--line);border-radius:6px;padding:4px 9px;cursor:pointer}
+.out{padding:14px 18px;display:grid;gap:12px;min-width:0}
+.fig{background:var(--bg);border-radius:8px;min-height:240px;display:grid;place-items:center;overflow:hidden}
+.fig img{width:100%;height:auto;display:block}
+.fig .ph{font:13px var(--mono);color:var(--muted);padding:20px;text-align:center}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.ro{background:var(--surface);padding:8px 11px;display:grid;gap:1px}
+.ro span{font-size:11.5px;color:var(--muted)}
+.ro b{font:500 15px var(--mono);font-variant-numeric:tabular-nums}
+.qs{padding:14px 18px;border-top:1px solid var(--line);display:grid;gap:6px}
+.qs h4{font:600 15px var(--display);margin:0}
+.qs ol{margin:0}
+.qs .note{font-size:13px;color:var(--muted);margin:4px 0 0}
+details.code{border-top:1px solid var(--line)}
+details.code summary{cursor:pointer;padding:12px 18px;font:500 14px var(--body);color:var(--accent);list-style:none}
+details.code summary::-webkit-details-marker{display:none}
+details.code summary::before{content:"▸ ";font-family:var(--mono)}
+details.code[open] summary::before{content:"▾ "}
+.code-wrap{padding:0 18px 16px;display:grid;gap:10px}
+textarea{width:100%;min-height:340px;resize:vertical;font:12.5px/1.5 var(--mono);color:var(--fg);background:var(--bg);
+  border:1px solid var(--line);border-radius:8px;padding:12px;tab-size:4;white-space:pre;overflow:auto}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button{font:500 13.5px var(--body);border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:6px;padding:7px 12px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+pre.err{margin:0;padding:10px 12px;border-radius:8px;background:var(--bg);color:var(--err);font:12px/1.45 var(--mono);white-space:pre-wrap;overflow-x:auto}
+.check li{list-style:"☐  "}
+.small{font-size:14px;color:var(--muted)}
+
+/* Blocs de réponse */
+.ans{margin:4px 0 22px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 14px;display:grid;gap:12px}
+.ans.is-pred{border-left:3px solid var(--dye)}
+.qs li .ans{margin:8px 0 12px}
+.ans-head{display:flex;justify-content:space-between;gap:8px;font:500 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.ans-saved{color:var(--muted);text-transform:none;letter-spacing:0}
+.ans-part{display:grid;gap:5px}
+.ans-part > label,.sel-label{font-size:14px;font-weight:500}
+.ans textarea{min-height:0;white-space:pre-wrap;font:14px/1.5 var(--body);resize:vertical;padding:8px 10px}
+.numrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.numrow input{font:14px var(--mono);width:12em;max-width:100%;padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.unit{font:13px var(--mono);color:var(--muted)}
+.mark{font:500 13px var(--body)}
+.ans-part.ok .mark,.sel-grid select.good + .mark{color:var(--accent)}
+.ans-part.ok input{border-color:var(--accent)}
+.ans-part.ko .mark,.sel-grid select.bad + .mark{color:var(--err)}
+.ans-part.ko input{border-color:var(--err)}
+.hint{font-size:13px;color:var(--err)}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:4px}
+legend{font-size:14px;font-weight:500;padding:0;margin-bottom:4px}
+.opt{display:flex;gap:8px;align-items:flex-start;font-size:14.5px;padding:4px 8px;border-radius:6px;cursor:pointer}
+.opt input{margin-top:5px;accent-color:var(--accent);flex:none}
+.opt.good{background:var(--soft)}
+.opt.bad{outline:1px solid var(--err)}
+.sel-grid{display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr) 1.5em;gap:6px 10px;align-items:center;font-size:14px}
+.sel-grid select{width:100%}
+.sel-grid select.good{border-color:var(--accent)} .sel-grid select.bad{border-color:var(--err)}
+.ans-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ans-result{font:500 13px var(--mono);color:var(--muted)}
+.ans-note{font-size:13px;color:var(--muted)}
+.ans-why{font-size:14px;line-height:1.55;padding:10px 12px;border-radius:8px;background:var(--soft)}
+.progress{font-size:13.5px;color:var(--muted);margin-top:8px}
+.progress a{color:var(--accent)}
+.export{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:16px;display:grid;gap:10px;margin:8px 0 10px}
+.export input{font:15px var(--body);padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);max-width:24em}
+.export p{margin:0}
+</style>
+</head>
+<body>
+<main>
+<!--
+  MODÈLE D'ACTIVITÉ
+  - Remplacez tout le texte en MAJUSCULES et les exemples ci-dessous.
+  - Questions : un paragraphe <p class="ex"><b>A1. Titre.</b> …</p> ; prédictions : <p class="pred"><b>Prédiction P1.</b> …</p>.
+    L'identifiant (A1, B2, P1…) relie la question à son bloc de réponse dans l'objet Q (dernier script).
+  - Simulations : une <section class="sim" data-sim="nom">, un <script type="text/plain" id="src-nom"> avec
+    simulate_nom(p), et une entrée SIMS.nom dans le script moteur. Les questions d'une simulation sont les <li>
+    de .qs > ol ; leurs blocs de réponse s'appellent nom1, nom2…
+  - Changez KEY (début du dernier script) : chaque activité doit avoir sa propre clé de stockage.
+-->
+<div class="col">
+  <div class="eyebrow">CODE DU COURS · THÈME</div>
+  <h1>TITRE DE L'ACTIVITÉ</h1>
+  <p class="lede">UNE PHRASE QUI DIT CE QUE L'ÉTUDIANT VA FAIRE ET POURQUOI.</p>
+
+  <h2>Mode d'emploi</h2>
+  <p>Comptez environ DURÉE. Sous chaque question, un bloc permet de saisir votre réponse : texte libre, valeur numérique ou QCM. Les réponses sont enregistrées automatiquement dans votre navigateur ; les calculs et les QCM peuvent être vérifiés, les prédictions non.</p>
+  <div class="status load" id="status"><span class="dot"></span><span id="status-txt">Chargement de Python dans le navigateur (Pyodide, numpy, matplotlib). Comptez 10 à 30 s au premier lancement ; une connexion internet est nécessaire.</span></div>
+
+  <h2>Partie 1 — EXEMPLES DE QUESTIONS</h2>
+  <p class="ex"><b>A1. Exemple de calcul.</b> Pour un cube d'arête L, calculez le rapport surface/volume S/V (en m⁻¹) pour L = 1 mm et L = 100 µm. Commentez.</p>
+  <p class="ex"><b>A2. Exemple de QCM.</b> Quelle est l'unité de la viscosité dynamique en unités SI de base ?</p>
+  <p class="pred"><b>Prédiction P1.</b> Exemple de prédiction : notez ce que vous attendez avant de lancer la simulation.</p>
+</div>
+
+<section class="sim" data-sim="demo">
+  <div class="sim-head">
+    <span class="tag">Simulation 1 · après A1</span>
+    <h3>EXEMPLE : décroissance exponentielle</h3>
+    <span class="eq">c(t) = c₀ exp(−t/τ)</span>
+  </div>
+  <div class="sim-body">
+    <div class="controls">
+      <div class="ctl"><label for="d-tau">Temps caractéristique τ <output id="o-d-tau"></output></label>
+        <input type="range" id="d-tau" min="0" max="1000" value="500" data-min="0.1" data-max="100" data-log></div>
+      <div class="ctl"><label for="d-c0">Concentration initiale c₀ <output id="o-d-c0"></output></label>
+        <input type="range" id="d-c0" min="1" max="100" step="1" value="10"></div>
+    </div>
+    <div class="out">
+      <div class="fig" id="fig-demo"><div class="ph">En attente de Python…</div></div>
+      <div class="readouts">
+        <div class="ro"><span>Demi-vie t₁/₂</span><b id="r-demo-thalf">—</b></div>
+        <div class="ro"><span>c à t = τ</span><b id="r-demo-ctau">—</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="qs">
+    <h4>Questions</h4>
+    <ol>
+      <li>Relevez la demi-vie pour τ = 10 s. Quelle relation lie t₁/₂ et τ ?</li>
+      <li>Dans le code, ajoutez une seconde courbe pour 2τ et comparez.</li>
+    </ol>
+  </div>
+  <details class="code"><summary>Voir et modifier le code Python</summary>
+    <div class="code-wrap">
+      <textarea id="code-demo" spellcheck="false" aria-label="Code Python de la simulation"></textarea>
+      <div class="btns"><button class="primary" data-run="demo">Exécuter le code</button><button data-reset="demo">Rétablir le code d'origine</button></div>
+      <pre class="err" id="err-demo" hidden></pre>
+    </div>
+  </details>
+</section>
+
+<div class="col">
+  <h2>Ticket de sortie</h2>
+  <p>Avant le cours, exportez vos réponses avec le bouton ci-dessous et déposez le fichier sur la page du cours.</p>
+  <ul class="check">
+    <li>Vos réponses aux prédictions (elles sont incluses dans l'export)</li>
+    <li>Une question restée sans réponse que vous voulez voir traitée en séance</li>
+  </ul>
+  <p class="small">Les simulations tournent entièrement dans votre navigateur grâce à Pyodide (Python compilé en WebAssembly). Aucune donnée n'est envoyée.</p>
+</div>
+</main>
+
+<script type="text/plain" id="py-prelude">
+import json, io, base64
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+C = {}   # couleurs du thème (clair ou sombre), fournies par la page
+
+def _run(name, pjson, cjson):
+    C.clear(); C.update(json.loads(cjson))
+    plt.rcParams.update({
+        'figure.facecolor': 'none', 'axes.facecolor': 'none', 'savefig.facecolor': 'none',
+        'text.color': C['fg'], 'axes.labelcolor': C['fg'], 'axes.titlecolor': C['fg'],
+        'xtick.color': C['muted'], 'ytick.color': C['muted'], 'axes.edgecolor': C['line'],
+        'axes.spines.top': False, 'axes.spines.right': False, 'font.size': 10,
+        'axes.titlesize': 11, 'axes.titleweight': 'bold', 'legend.frameon': False})
+    fig, ro = globals()['simulate_' + name](json.loads(pjson))
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', dpi=130, transparent=True)
+    plt.close(fig)
+    def clean(v):
+        if v is None:
+            return None
+        v = float(v)
+        return v if np.isfinite(v) else None
+    return json.dumps({'img': base64.b64encode(buf.getvalue()).decode(),
+                       'ro': {k: clean(v) for k, v in ro.items()}})
+</script>
+
+<script type="text/plain" id="src-demo">
+# EXEMPLE de simulation : décroissance exponentielle.
+# La fonction reçoit les valeurs des curseurs dans p et renvoie (figure, mesures).
+
+def simulate_demo(p):
+    tau, c0 = p['tau'], p['c0']
+    t = np.linspace(0, 5 * tau, 300)
+    c = c0 * np.exp(-t / tau)
+
+    fig, ax = plt.subplots(figsize=(8.6, 3.2))
+    ax.plot(t, c, color=C['accent'], lw=2)
+    ax.axvline(tau * np.log(2), color=C['dye'], ls='--', lw=1)
+    ax.set_xlabel('t (s)'); ax.set_ylabel('c (mM)'); ax.set_title('Décroissance')
+    fig.tight_layout()
+    return fig, {'thalf': tau * np.log(2), 'ctau': c0 / np.e}
+</script>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const tok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const src = id => $(id).textContent.replace(/^\n/, '');
+
+// ---------- formatage ----------
+function val(id){
+  const el = $(id);
+  if (el.dataset.log !== undefined){ const mn=+el.dataset.min, mx=+el.dataset.max; return mn*Math.pow(mx/mn, el.value/1000); }
+  return +el.value;
+}
+function setLog(id, v){ const el=$(id), mn=+el.dataset.min, mx=+el.dataset.max; el.value = 1000*Math.log(v/mn)/Math.log(mx/mn); }
+const sup = s => String(s).replace(/-/g,'⁻').replace(/[0-9]/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
+function num(x, p=3){
+  if (x === null || x === undefined || !isFinite(x)) return '—';
+  if (x === 0) return '0';
+  const a=Math.abs(x), e=Math.floor(Math.log10(a));
+  if (e >= -2 && e < 4) return (+x.toPrecision(p)).toLocaleString('fr-FR', {maximumSignificantDigits:p});
+  return (+(x/Math.pow(10,e)).toPrecision(p)).toLocaleString('fr-FR') + '·10' + sup(e);
+}
+function len(m){ const a=Math.abs(m); if (a>=1) return num(m)+' m'; if (a>=1e-3) return num(m*1e3)+' mm'; if (a>=1e-6) return num(m*1e6)+' µm'; return num(m*1e9)+' nm'; }
+function speed(v){ const a=Math.abs(v); if (a>=1) return num(v)+' m/s'; if (a>=1e-3) return num(v*1e3)+' mm/s'; return num(v*1e6)+' µm/s'; }
+function dur(t){ if (t<1) return num(t*1e3)+' ms'; if (t<120) return num(t)+' s'; if (t<7200) return num(t/60)+' min'; if (t<172800) return num(t/3600)+' h'; return num(t/86400)+' jours'; }
+function conc(I){ return I>=1 ? num(I)+' M' : I>=1e-3 ? num(I*1e3)+' mM' : num(I*1e6)+' µM'; }
+
+// ---------- définition des simulations ----------
+// Une entrée par simulation : inputs (ids des contrôles), labels() (texte des curseurs),
+// params() (dictionnaire passé à simulate_<nom>), show(ro) (affichage des mesures).
+const SIMS = {
+  demo: {
+    inputs: ['d-tau','d-c0'],
+    labels(){ $('o-d-tau').textContent = num(val('d-tau'))+' s'; $('o-d-c0').textContent = val('d-c0')+' mM'; },
+    params(){ return {tau: val('d-tau'), c0: val('d-c0')}; },
+    show(ro){ $('r-demo-thalf').textContent = dur(ro.thalf); $('r-demo-ctau').textContent = num(ro.ctau)+' mM'; }
+  }
+};
+
+// ---------- moteur ----------
+let py = null, runFn = null;
+const state = {}; // name -> {busy, dirty, timer}
+function colors(){ return {fg:tok('--fg'), muted:tok('--muted'), line:tok('--line'), accent:tok('--accent'), dye:tok('--dye'), soft:tok('--soft'), well:tok('--well')}; }
+
+function exec(name){
+  const s = state[name] || (state[name] = {});
+  if (!runFn){ s.dirty = true; return; }
+  const err = $('err-'+name);
+  try {
+    const out = JSON.parse(runFn(name, JSON.stringify(SIMS[name].params()), JSON.stringify(colors())));
+    const fig = $('fig-'+name);
+    let img = fig.querySelector('img');
+    if (!img){ fig.innerHTML = ''; img = document.createElement('img'); img.alt = 'Résultat de la simulation'; fig.appendChild(img); }
+    img.src = 'data:image/png;base64,'+out.img;
+    SIMS[name].show(out.ro);
+    err.hidden = true;
+  } catch(e){
+    err.textContent = 'Erreur Python :\n' + String(e.message || e).split('\n').slice(-12).join('\n');
+    err.hidden = false;
+    const d = err.closest('details'); if (d) d.open = true;
+  }
+}
+function schedule(name){
+  const s = state[name] || (state[name] = {});
+  SIMS[name].labels();
+  clearTimeout(s.timer);
+  s.timer = setTimeout(() => exec(name), 120);
+}
+function loadCode(name){
+  try { py.runPython($('code-'+name).value); $('err-'+name).hidden = true; return true; }
+  catch(e){ const err=$('err-'+name); err.textContent = 'Erreur Python :\n'+String(e.message||e).split('\n').slice(-12).join('\n'); err.hidden=false; return false; }
+}
+
+// ---------- branchement de l'interface ----------
+Object.keys(SIMS).forEach(name => {
+  $('code-'+name).value = src('src-'+name);
+  SIMS[name].inputs.forEach(id => $(id).addEventListener('input', () => schedule(name)));
+  SIMS[name].labels();
+});
+document.querySelectorAll('[data-run]').forEach(b => b.addEventListener('click', () => { const n=b.dataset.run; if (py && loadCode(n)) exec(n); }));
+document.querySelectorAll('[data-reset]').forEach(b => b.addEventListener('click', () => { const n=b.dataset.reset; $('code-'+n).value = src('src-'+n); if (py && loadCode(n)) exec(n); }));
+document.querySelectorAll('[data-rerun]').forEach(b => b.addEventListener('click', () => exec(b.dataset.rerun)));
+document.querySelectorAll('textarea').forEach(t => t.addEventListener('keydown', e => {
+  if (e.key === 'Tab' && !e.shiftKey){ e.preventDefault(); const s=t.selectionStart; t.setRangeText('    ', s, t.selectionEnd, 'end'); }
+}));
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => Object.keys(SIMS).forEach(exec)); } catch(e){}
+
+// ---------- chargement de Pyodide ----------
+const st = $('status'), stt = $('status-txt');
+(async () => {
+  try {
+    if (typeof loadPyodide === 'undefined') throw new Error('Pyodide n’a pas pu être téléchargé.');
+    py = await loadPyodide();
+    stt.textContent = 'Python est chargé. Installation de numpy et matplotlib…';
+    await py.loadPackage(['numpy', 'matplotlib']);
+    stt.textContent = 'Préparation des simulations…';
+    py.runPython(src('py-prelude'));
+    Object.keys(SIMS).forEach(loadCode);
+    runFn = py.globals.get('_run');
+    Object.keys(SIMS).forEach(exec);
+    st.className = 'status ready';
+    stt.textContent = 'Python est prêt. Les simulations se mettent à jour quand vous bougez les curseurs.';
+  } catch(e){
+    st.className = 'status fail';
+    stt.textContent = 'Le chargement de Python a échoué (' + (e.message || e) + '). Vérifiez votre connexion internet et rechargez la page.';
+  }
+})();
+})();
+</script>
+<script>
+/* ===================== BLOCS DE RÉPONSE ===================== */
+(function(){
+// Mettre à false pour masquer les boutons « Vérifier » et « Voir la correction » (les réponses restent enregistrables et exportables).
+const SHOW_FEEDBACK = true;
+const KEY = 'SECTION-ACTIVITE-reponses-v1';   // À CHANGER : clé unique par activité
+
+const PRED = 'Prédiction : pas de correction ici, nous comparerons les réponses en séance.';
+const Q = {
+  // Types de parties : num (lo/hi = intervalle accepté, alt = erreurs classiques avec message),
+  // mcq (ok = indices justes, multi: true pour plusieurs réponses), select (rows avec ok), text.
+  // pred: true = prédiction, enregistrée sans correction. why = correction affichée à la demande.
+  A1: {parts:[
+    {t:'num', label:'S/V pour L = 1 mm', unit:'m⁻¹', lo:5700, hi:6300,
+      alt:[{lo:950, hi:1050, msg:'Vous avez calculé S/V pour une seule face : un cube en a six.'}]},
+    {t:'num', label:'S/V pour L = 100 µm', unit:'m⁻¹', lo:5.7e4, hi:6.3e4},
+    {t:'text', label:'Commentaire'}],
+    why:'S/V = 6/L : 6·10³ puis 6·10⁴ m⁻¹. Diviser la taille par 10 multiplie S/V par 10.'},
+  A2: {parts:[
+    {t:'mcq', label:'Unité de µ en unités SI de base', opts:['kg·m⁻¹·s⁻¹','kg·m·s⁻²','m²·s⁻¹'], ok:[0]}],
+    why:'Pa·s = kg·m⁻¹·s⁻². s = kg·m⁻¹·s⁻¹. Le m²/s est l\u2019unité de la viscosité cinématique.'},
+  P1: {pred:true, parts:[
+    {t:'mcq', label:'Votre prédiction', opts:['Option 1','Option 2','Je ne sais pas']},
+    {t:'text', label:'Justification'}]},
+  demo1: {parts:[
+    {t:'num', label:'Demi-vie pour τ = 10 s', unit:'s', lo:6.8, hi:7.1},
+    {t:'mcq', label:'Relation', opts:['t₁/₂ = τ ln 2','t₁/₂ = τ/2','t₁/₂ = 2τ'], ok:[0]}],
+    why:'c(t₁/₂) = c₀/2 donne t₁/₂ = τ ln 2 ≈ 0,69 τ.'},
+  demo2: {parts:[{t:'text', label:'Votre modification du code et vos observations'}]}
+};
+
+// ---------- stockage ----------
+let store = {};
+try { store = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e){ store = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){} updateProgress(); };
+
+// ---------- lecture des nombres (virgule, 6e4, 6·10^4, 6×10⁻⁸…) ----------
+function parseNum(s){
+  if (s == null) return NaN;
+  const supMap = {'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','⁻':'-','⁺':''};
+  s = String(s).trim().replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺]/g, c => supMap[c]).replace(/\s| | /g,'').replace(/−/g,'-').replace(',', '.');
+  s = s.replace(/[×x*·]10\^?/i, 'e');
+  if (/^10\^-?\d+$/.test(s)) s = '1e' + s.replace(/^10\^/, '');
+  return s === '' ? NaN : Number(s);
+}
+
+// ---------- construction des blocs ----------
+const order = [];
+function qText(el){ return el.textContent.replace(/\s+/g,' ').trim(); }
+function build(qid, host, place){
+  const spec = Q[qid]; if (!spec) return;
+  order.push({qid, el:host});
+  const box = document.createElement('div'); box.className = 'ans' + (spec.pred ? ' is-pred' : ''); box.id = 'ans-'+qid;
+  const head = document.createElement('div'); head.className = 'ans-head';
+  head.innerHTML = '<span>Votre réponse · ' + (qid.match(/^[A-Z]\d+$/) ? qid : 'Q' + qid.replace(/\D/g,'')) + '</span><span class="ans-saved" aria-live="polite"></span>';
+  box.appendChild(head);
+  spec.parts.forEach((p, i) => box.appendChild(part(qid, i, p, spec.pred)));
+  const foot = document.createElement('div'); foot.className = 'ans-foot';
+  if (spec.pred){
+    foot.innerHTML = '<span class="ans-note">' + PRED + '</span>';
+  } else if (SHOW_FEEDBACK){
+    const checkable = spec.parts.some(p => (p.t==='num' && p.lo!==undefined) || (p.t==='mcq' && p.ok) || p.t==='select');
+    if (checkable){ const b = document.createElement('button'); b.type='button'; b.className='primary'; b.textContent='Vérifier'; b.addEventListener('click', () => check(qid, box)); foot.appendChild(b); }
+    if (spec.why){
+      const b = document.createElement('button'); b.type='button'; b.textContent='Voir la correction';
+      const w = document.createElement('div'); w.className='ans-why'; w.hidden = true; w.textContent = spec.why;
+      b.addEventListener('click', () => { w.hidden = !w.hidden; b.textContent = w.hidden ? 'Voir la correction' : 'Masquer la correction'; });
+      foot.appendChild(b); box.appendChild(foot); box.appendChild(w);
+    }
+    const r = document.createElement('span'); r.className = 'ans-result'; r.setAttribute('aria-live','polite'); foot.appendChild(r);
+  }
+  if (!foot.parentNode) box.appendChild(foot);
+  place(box);
+}
+function flash(qid){ const s = document.querySelector('#ans-'+qid+' .ans-saved'); if (s){ s.textContent = 'Enregistré'; clearTimeout(s._t); s._t = setTimeout(() => s.textContent = '', 1200); } }
+function part(qid, i, p, pred){
+  const k = qid+'.'+i, wrap = document.createElement('div'); wrap.className = 'ans-part'; wrap.dataset.k = k;
+  const id = 'in-'+qid+'-'+i;
+  if (p.t === 'text'){
+    wrap.innerHTML = '<label for="'+id+'">'+p.label+'</label><textarea id="'+id+'" rows="'+(p.rows||3)+'"></textarea>';
+    const ta = wrap.querySelector('textarea'); ta.value = store[k] || '';
+    ta.addEventListener('input', () => { store[k] = ta.value; save(); flash(qid); });
+  } else if (p.t === 'num'){
+    wrap.innerHTML = '<label for="'+id+'">'+p.label+'</label><div class="numrow"><input type="text" inputmode="decimal" autocomplete="off" id="'+id+'" placeholder="ex. 6e4 ou 6·10^4"><span class="unit">'+(p.unit||'')+'</span><span class="mark" aria-live="polite"></span></div><div class="hint" hidden></div>';
+    const inp = wrap.querySelector('input'); inp.value = store[k] || '';
+    inp.addEventListener('input', () => { store[k] = inp.value; save(); flash(qid); wrap.classList.remove('ok','ko'); wrap.querySelector('.mark').textContent=''; wrap.querySelector('.hint').hidden = true; });
+  } else if (p.t === 'mcq'){
+    const fs = document.createElement('fieldset'); const lg = document.createElement('legend'); lg.textContent = p.label; fs.appendChild(lg);
+    const saved = store[k] || [];
+    p.opts.forEach((o, j) => {
+      const l = document.createElement('label'); l.className = 'opt';
+      const inp = document.createElement('input'); inp.type = p.multi ? 'checkbox' : 'radio'; inp.name = id; inp.value = j; inp.checked = saved.includes(j);
+      inp.addEventListener('change', () => { store[k] = [...fs.querySelectorAll('input:checked')].map(x => +x.value); save(); flash(qid); wrap.classList.remove('ok','ko'); fs.querySelectorAll('.opt').forEach(x=>x.classList.remove('good','bad')); });
+      l.appendChild(inp); l.appendChild(document.createTextNode(o)); fs.appendChild(l);
+    });
+    if (p.multi){ const n = document.createElement('div'); n.className='ans-note'; n.textContent = 'Plusieurs réponses possibles.'; fs.appendChild(n); }
+    wrap.appendChild(fs);
+  } else if (p.t === 'select'){
+    const saved = store[k] || {};
+    let html = '<div class="sel-label">'+p.label+'</div><div class="sel-grid">';
+    p.rows.forEach((r, j) => {
+      html += '<label for="'+id+'-'+j+'">'+r.label+'</label><select id="'+id+'-'+j+'" data-row="'+j+'"><option value="">—</option>' + p.opts.map((o,m) => '<option value="'+m+'">'+o+'</option>').join('') + '</select><span class="mark"></span>';
+    });
+    wrap.innerHTML = html + '</div>';
+    wrap.querySelectorAll('select').forEach(sel => {
+      const j = sel.dataset.row; if (saved[j] !== undefined && saved[j] !== '') sel.value = saved[j];
+      sel.addEventListener('change', () => { const cur = store[k] || {}; cur[j] = sel.value; store[k] = cur; save(); flash(qid); sel.nextElementSibling.textContent=''; sel.classList.remove('good','bad'); });
+    });
+  }
+  return wrap;
+}
+
+// ---------- vérification ----------
+function fmtR(x){ return Math.abs(x) >= 1e4 || (Math.abs(x) < 1e-2 && x !== 0) ? x.toExponential(1).replace('.', ',').replace('e', '·10^') : String(+x.toPrecision(3)).replace('.', ','); }
+function check(qid, box){
+  const spec = Q[qid]; let good = 0, total = 0;
+  spec.parts.forEach((p, i) => {
+    const k = qid+'.'+i, wrap = box.querySelector('[data-k="'+k+'"]');
+    if (p.t === 'num' && p.lo !== undefined){
+      total++; const v = parseNum(store[k]); const mark = wrap.querySelector('.mark'), hint = wrap.querySelector('.hint');
+      hint.hidden = true;
+      if (isNaN(v)){ mark.textContent = 'à compléter'; wrap.classList.remove('ok','ko'); return; }
+      const ok = p.lo === p.hi ? Math.abs(v - p.lo) < 1e-9 : (v >= Math.min(p.lo,p.hi) && v <= Math.max(p.lo,p.hi));
+      wrap.classList.toggle('ok', ok); wrap.classList.toggle('ko', !ok);
+      mark.textContent = ok ? '✓ juste' : '✗ à revoir';
+      if (ok) good++;
+      else {
+        const alt = (p.alt || []).find(a => v >= a.lo && v <= a.hi);
+        if (alt){ hint.textContent = alt.msg; hint.hidden = false; }
+        else if (v > 0 && p.lo > 0){ hint.textContent = v > p.hi ? 'Trop grand' + (v/p.hi > 8 ? ' (d’un facteur ' + fmtR(v/p.hi) + ' environ : vérifiez les unités et les puissances de 10).' : '.') : 'Trop petit' + (p.lo/v > 8 ? ' (d’un facteur ' + fmtR(p.lo/v) + ' environ : vérifiez les unités et les puissances de 10).' : '.'); hint.hidden = false; }
+      }
+    } else if (p.t === 'mcq' && p.ok){
+      total++; const sel = (store[k] || []).slice().sort(); const ok = sel.length === p.ok.length && p.ok.slice().sort().every((x,j) => x === sel[j]);
+      wrap.classList.toggle('ok', ok); wrap.classList.toggle('ko', !ok && sel.length > 0);
+      wrap.querySelectorAll('.opt').forEach((l, j) => { l.classList.remove('good','bad'); const ch = sel.includes(j);
+        if (ch && p.ok.includes(j)) l.classList.add('good'); else if (ch) l.classList.add('bad'); });
+      if (ok) good++;
+    } else if (p.t === 'select'){
+      const cur = store[k] || {};
+      p.rows.forEach((r, j) => { total++; const s = wrap.querySelector('select[data-row="'+j+'"]'); const v = cur[j];
+        const ok = v !== undefined && v !== '' && +v === r.ok; s.classList.toggle('good', ok); s.classList.toggle('bad', !ok && v !== undefined && v !== '');
+        s.nextElementSibling.textContent = ok ? '✓' : (v ? '✗' : ''); if (ok) good++; });
+    }
+  });
+  box.querySelector('.ans-result').textContent = good + ' / ' + total + ' juste' + (good > 1 ? 's' : '');
+}
+
+// ---------- placement dans la page ----------
+const stop = el => !el || el.matches('.ex, .pred, h2, .sim, .status');
+document.querySelectorAll('p.ex, p.pred').forEach(p => {
+  const m = (p.querySelector('b') || {}).textContent; const id = m && (m.match(/^([A-Z]\d+)\./) || m.match(/(P\d+)\./));
+  if (!id) return;
+  let last = p; while (!stop(last.nextElementSibling)) last = last.nextElementSibling;
+  build(id[1], p, box => last.after(box));
+});
+document.querySelectorAll('section.sim').forEach(sec => {
+  const name = sec.dataset.sim;
+  sec.querySelectorAll('.qs > ol > li').forEach((li, i) => build(name + (i+1), li, box => li.appendChild(box)));
+});
+
+// ---------- progression, export, effacement ----------
+function answered(qid){
+  return Q[qid].parts.some((p, i) => { const v = store[qid+'.'+i];
+    if (v == null) return false; if (Array.isArray(v)) return v.length > 0; if (typeof v === 'object') return Object.values(v).some(x => x !== ''); return String(v).trim() !== ''; });
+}
+const prog = document.createElement('div'); prog.className = 'progress'; prog.setAttribute('aria-live','polite');
+document.getElementById('status').after(prog);
+function updateProgress(){
+  const n = order.filter(o => answered(o.qid)).length;
+  prog.innerHTML = 'Vos réponses sont enregistrées dans ce navigateur, sur cet ordinateur. <b>' + n + ' / ' + order.length + '</b> questions commencées · <a href="#export">exporter</a>';
+}
+function exportText(){
+  const name = (store._name || '').trim();
+  const lines = [document.title, 'Nom : ' + (name || '(non renseigné)'), 'Exporté le ' + new Date().toLocaleString('fr-FR'), ''];
+  order.forEach(({qid, el}) => {
+    const spec = Q[qid]; const label = qid.match(/^[A-Z]\d+$/) ? qid : (((document.querySelector('section.sim[data-sim="' + qid.replace(/\d+$/,'') + '"] .tag') || {}).textContent || 'Simulation').split('·')[0].trim() + ', question ' + qid.replace(/^\D+/,''));
+    let q = qText(el.cloneNode(true)); if (el.tagName === 'LI'){ const c = el.cloneNode(true); c.querySelectorAll('.ans').forEach(x => x.remove()); q = qText(c); }
+    lines.push('## ' + label + (spec.pred ? ' (prédiction)' : ''));
+    lines.push(q.length > 220 ? q.slice(0, 217) + '…' : q);
+    spec.parts.forEach((p, i) => {
+      const v = store[qid+'.'+i]; let a = '';
+      if (p.t === 'text' || p.t === 'num') a = (v || '').trim() + (p.t === 'num' && v ? ' ' + (p.unit || '') : '');
+      else if (p.t === 'mcq') a = (v || []).map(j => p.opts[j]).join(' ; ');
+      else if (p.t === 'select') a = p.rows.map((r, j) => r.label + ' → ' + ((v && v[j] !== undefined && v[j] !== '') ? p.opts[+v[j]] : '?')).join(' ; ');
+      lines.push('- ' + p.label + ' : ' + (a.trim() || '(sans réponse)'));
+    });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+// panneau d'export dans le ticket de sortie
+const check_ul = document.querySelector('ul.check');
+const panel = document.createElement('div'); panel.className = 'export'; panel.id = 'export';
+panel.innerHTML = '<h3>Exporter vos réponses</h3>' +
+  '<p>Le fichier texte contient toutes vos réponses, y compris les prédictions. Déposez-le avec votre ticket de sortie.</p>' +
+  '<label for="ans-name">Nom et prénom</label><input type="text" id="ans-name" autocomplete="name">' +
+  '<div class="btns"><button type="button" class="primary" id="ans-dl">Télécharger mes réponses (.txt)</button><button type="button" id="ans-copy">Copier dans le presse-papiers</button><button type="button" id="ans-clear">Effacer toutes mes réponses</button></div>' +
+  '<p class="ans-note" id="ans-msg" aria-live="polite"></p>';
+check_ul.after(panel);
+const nameIn = document.getElementById('ans-name'); nameIn.value = store._name || '';
+nameIn.addEventListener('input', () => { store._name = nameIn.value; save(); });
+const msg = t => { const m = document.getElementById('ans-msg'); m.textContent = t; };
+document.getElementById('ans-dl').addEventListener('click', () => {
+  const blob = new Blob([exportText()], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'reponses-' + KEY.replace(/-reponses.*$/,'') + '-' + ((store._name || 'etudiant').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'etudiant') + '.txt';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  msg('Fichier téléchargé.');
+});
+document.getElementById('ans-copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(exportText()); msg('Réponses copiées. Collez-les dans un courriel ou un document.'); }
+  catch(e){ msg('La copie automatique a échoué : utilisez plutôt le téléchargement.'); }
+});
+let armed = false;
+document.getElementById('ans-clear').addEventListener('click', e => {
+  if (!armed){ armed = true; e.target.textContent = 'Confirmer l’effacement'; msg('Cliquez à nouveau pour tout effacer. Cette action est définitive.'); setTimeout(() => { armed = false; e.target.textContent = 'Effacer toutes mes réponses'; }, 5000); return; }
+  store = {}; save(); location.reload();
+});
+updateProgress();
+})();
+</script>
+
+</body>
+</html>

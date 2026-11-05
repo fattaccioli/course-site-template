@@ -1,0 +1,38 @@
+# Table des matières du site __COURSE_CODE__
+# ------------------------------------
+# Chaque fichier .html placé dans content/ apparaît automatiquement dans l'index,
+# avec son <title> et sa <meta name="description">. Ce fichier sert uniquement
+# à corriger ou compléter ces informations : rien n'y est obligatoire.
+#
+# Après avoir ajouté des pages, lancez   python build.py --sync-toc
+# pour ajouter ici une entrée modifiable pour chaque nouvelle page.
+
+site:
+  title: "__COURSE_CODE__ · __COURSE_TITLE__"
+  subtitle: "__SUBTITLE__"
+  # Petite ligne au-dessus du titre (établissement, formation)
+  eyebrow: "__EYEBROW__"
+  # Texte de la page de connexion
+  login_hint: "Entrez le mot de passe communiqué en cours ou sur Moodle."
+  # Lien affiché en haut de l'index (facultatif) et son libellé
+  course_link: "__COURSE_LINK__"
+  course_link_label: "Page Moodle du cours"
+  # Sel de chiffrement : laissez-le tel quel. Le changer oblige tout le monde à retaper le mot de passe.
+  salt: "__REPO_NAME__"
+  # Durée pendant laquelle « Rester connecté » garde l'accès ouvert
+  remember_days: 120
+  # Une page modifiée depuis moins de ce nombre de jours porte la mention « Nouveau »
+  new_days: 14
+
+# Sections = sous-dossiers de content/. Sans entrée ici, le nom du dossier sert de titre.
+# Exemple :
+#   transport:
+#     title: "Transport en microfluidique"
+#     description: "Hydrodynamique, électrocinétique, diffusion et mélange."
+#     order: 1
+sections: {}
+
+# Une entrée par page, repérée par son chemin dans content/.
+# Champs possibles : title, description, order (plus petit = plus haut), hidden (true/false),
+# url (pour un lien externe, sans fichier dans content/), section (pour un lien externe).
+pages: {}

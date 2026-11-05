@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f6f7; --surface:#ffffff; --fg:#14202a; --muted:#566874; --line:#d3dde2;
+  --accent:#0b7480; --soft:#d8eef0; --dye:#c2187a;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"Instrument Sans","Helvetica Neue",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0c1318; --surface:#121c23; --fg:#e3ebef; --muted:#8fa3b0; --line:#25343e;
+    --accent:#3fc1cf; --soft:#143840; --dye:#ff4fae; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--body);
+  padding:40px max(16px, env(safe-area-inset-right)) 64px max(16px, env(safe-area-inset-left))}
+main{max-width:880px;margin:0 auto}
+header{display:grid;gap:10px;padding-bottom:22px;border-bottom:1px solid var(--line)}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:700 clamp(28px,4.6vw,42px)/1.08 var(--display);margin:0;text-wrap:balance}
+.subtitle{color:var(--muted);margin:0;max-width:62ch}
+.top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.moodle,.logout{font:500 13.5px var(--body);color:var(--fg);text-decoration:none;border:1px solid var(--line);
+  border-radius:999px;padding:6px 13px;background:var(--surface);cursor:pointer}
+.moodle:hover,.logout:hover{border-color:var(--accent);color:var(--accent)}
+.sec{margin-top:36px}
+h2{font:600 22px/1.2 var(--display);margin:0 0 4px}
+.sec-desc{color:var(--muted);margin:0 0 14px;max-width:70ch}
+.cards{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.card{display:grid;gap:4px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  color:inherit;text-decoration:none;transition:border-color .15s}
+.card:hover{border-color:var(--accent)}
+.card-title{font-weight:600;font-size:17px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.card-desc{color:var(--muted);font-size:15px}
+.card-meta{display:flex;gap:12px;font:12px var(--mono);color:var(--muted)}
+.card-meta:empty{display:none}
+.badge{font:500 11px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--dye);
+  border:1px solid currentColor;border-radius:4px;padding:1px 6px}
+.kind{color:var(--accent)}
+footer{margin-top:48px;font-size:13px;color:var(--muted)}
+.empty{color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){.card{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">{{EYEBROW}}</div>
+    <h1>{{TITLE}}</h1>
+    <p class="subtitle">{{SUBTITLE}}</p>
+    <div class="top">{{MOODLE}}<button class="logout" type="button" id="logout">Se déconnecter</button></div>
+  </header>
+  {{SECTIONS}}
+  <footer>Index mis à jour le {{BUILT}}. Les réponses saisies dans les activités sont enregistrées dans votre navigateur.</footer>
+</main>
+<script>
+document.getElementById('logout').addEventListener('click', function(){
+  var k = 'site-key:' + {{SALT}};
+  try { localStorage.removeItem(k); } catch(e){}
+  try { sessionStorage.removeItem(k); } catch(e){}
+  location.reload();
+});
+</script>
+</body>
+</html>

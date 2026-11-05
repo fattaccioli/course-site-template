@@ -1,0 +1,74 @@
+# Construit, chiffre et publie le site à chaque push sur main.
+#
+# Deux modes, choisis automatiquement :
+#  - un seul dépôt (privé avec GitHub Pro, ou public) : rien à régler, le site est publié
+#    par GitHub Pages depuis ce dépôt (Settings > Pages > Source : « GitHub Actions ») ;
+#  - deux dépôts (sources privées, site public) : définir la variable DEPLOY_REPO
+#    (ex. fattaccioli/course-UM5CI230) et le secret DEPLOY_TOKEN (jeton avec droit
+#    d'écriture sur ce dépôt). Le site chiffré y est poussé sur la branche gh-pages.
+#
+# Dans tous les cas, le secret SITE_PASSWORD contient le mot de passe des étudiants.
+
+name: Publier le site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # historique complet : dates de mise à jour exactes dans l'index
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Construire et chiffrer
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+        run: python build.py
+
+      - name: Préparer l'artefact Pages (un seul dépôt)
+        if: vars.DEPLOY_REPO == ''
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Pousser vers le dépôt public (deux dépôts)
+        if: vars.DEPLOY_REPO != ''
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.DEPLOY_TOKEN }}
+          external_repository: ${{ vars.DEPLOY_REPO }}
+          publish_branch: gh-pages
+          publish_dir: _site
+          force_orphan: true          # pas d'historique : seules les pages chiffrées actuelles sont publiques
+          commit_message: "Mise à jour du site"
+
+  deploy:
+    if: vars.DEPLOY_REPO == ''
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

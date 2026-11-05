@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Accès protégé · {{TITLE}}</title>
+<style>
+:root{--bg:#f3f6f7;--surface:#fff;--fg:#14202a;--muted:#566874;--line:#d3dde2;--accent:#0b7480;--err:#b3261e;color-scheme:light}
+@media (prefers-color-scheme: dark){:root{--bg:#0c1318;--surface:#121c23;--fg:#e3ebef;--muted:#8fa3b0;--line:#25343e;--accent:#3fc1cf;--err:#ff8a80;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 "Instrument Sans","Helvetica Neue",system-ui,sans-serif;
+  display:grid;place-items:center;padding:24px max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left))}
+form{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:24px;display:grid;gap:14px}
+.eyebrow{font:500 12px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:19px;line-height:1.3;margin:0}
+p{margin:0;color:var(--muted);font-size:14.5px}
+label{font-size:14px;font-weight:500}
+input[type=password]{width:100%;font:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg)}
+.rem{display:flex;gap:8px;align-items:center;font-weight:400;color:var(--muted)}
+.rem input{accent-color:var(--accent)}
+button{font:inherit;font-size:15px;font-weight:600;padding:10px;border:0;border-radius:7px;background:var(--accent);color:var(--bg);cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+.err{color:var(--err);font-size:14px;min-height:1.4em}
+.err.wait{color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+noscript{color:var(--err)}
+</style>
+</head>
+<body>
+<form id="f" autocomplete="on">
+  <div class="eyebrow">Accès réservé aux étudiants</div>
+  <h1>{{TITLE}}</h1>
+  <p>{{LOGIN_HINT}}</p>
+  <input type="text" name="username" autocomplete="username" value="etudiant" hidden>
+  <div style="display:grid;gap:6px">
+    <label for="pw">Mot de passe</label>
+    <input type="password" id="pw" autocomplete="current-password" required autofocus>
+  </div>
+  <label class="rem"><input type="checkbox" id="rem" checked> Rester connecté sur cet appareil</label>
+  <button id="go" type="submit">Ouvrir</button>
+  <div class="err" id="err" aria-live="polite"></div>
+  <noscript>JavaScript doit être activé pour ouvrir cette page.</noscript>
+</form>
+<script>
+(function(){
+  var P = {{PAYLOAD}};
+  var KEY = 'site-key:' + P.salt;
+  var $ = function(id){ return document.getElementById(id); };
+  var b64 = function(s){ var b = atob(s), u = new Uint8Array(b.length); for (var i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; };
+  var tob64 = function(u){ var s=''; for (var i=0;i<u.length;i++) s+=String.fromCharCode(u[i]); return btoa(s); };
+  var enc = function(s){ return new TextEncoder().encode(s); };
+
+  if (!window.crypto || !crypto.subtle){
+    $('err').textContent = 'Ce navigateur ne permet pas d’ouvrir la page (Web Crypto indisponible). Utilisez un navigateur récent, en https.';
+    $('go').disabled = true; return;
+  }
+  async function derive(pw){
+    var base = await crypto.subtle.importKey('raw', enc(pw), 'PBKDF2', false, ['deriveBits']);
+    var bits = await crypto.subtle.deriveBits({name:'PBKDF2', salt:enc(P.salt), iterations:P.iter, hash:'SHA-256'}, base, 256);
+    return new Uint8Array(bits);
+  }
+  async function unlock(raw){
+    var k = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
+    var pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(P.iv)}, k, b64(P.ct));
+    return new TextDecoder().decode(pt);
+  }
+  function show(htmlText){
+    var t = htmlText.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    document.open(); document.write(htmlText); document.close();
+    if (t){ var d = document.createElement('textarea'); d.innerHTML = t[1]; document.title = d.value.trim(); }
+  }
+  function readStored(){
+    try {
+      var s = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
+      if (!s) return null;
+      var o = JSON.parse(s);
+      if (o.exp && Date.now() > o.exp){ localStorage.removeItem(KEY); return null; }
+      return b64(o.k);
+    } catch(e){ return null; }
+  }
+  function store(raw, remember){
+    var o = JSON.stringify({k: tob64(raw), exp: remember ? Date.now() + P.days*864e5 : 0});
+    try { if (remember) localStorage.setItem(KEY, o); else sessionStorage.setItem(KEY, o); } catch(e){}
+  }
+  function forget(){ try { localStorage.removeItem(KEY); sessionStorage.removeItem(KEY); } catch(e){} }
+
+  (async function(){
+    var raw = readStored();
+    if (!raw) return;
+    try { show(await unlock(raw)); } catch(e){ forget(); $('err').textContent = 'Le mot de passe a changé. Entrez le nouveau mot de passe.'; }
+  })();
+
+  $('f').addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    $('go').disabled = true; $('err').className = 'err wait'; $('err').textContent = 'Vérification…';
+    try {
+      var raw = await derive($('pw').value);
+      var text = await unlock(raw);
+      store(raw, $('rem').checked);
+      show(text);
+    } catch(e){
+      $('err').className = 'err'; $('err').textContent = 'Mot de passe incorrect.';
+      $('go').disabled = false; $('pw').select();
+    }
+  });
+})();
+</script>
+</body>
+</html>
