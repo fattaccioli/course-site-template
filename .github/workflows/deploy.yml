@@ -27,6 +27,9 @@ concurrency:
 
 jobs:
   build:
+    # Ne tourne pas dans le dépôt modèle lui-même (pas de contenu ni de mot de passe),
+    # mais tourne dans chaque dépôt de cours créé à partir de lui.
+    if: github.repository != 'fattaccioli/course-site-template'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
