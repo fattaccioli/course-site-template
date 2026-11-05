@@ -66,7 +66,14 @@ noscript{color:var(--err)}
     var pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(P.iv)}, k, b64(P.ct));
     return new TextDecoder().decode(pt);
   }
-  function show(htmlText){
+  // document.open() ne remplace la page que si son chargement est terminé ;
+  // sinon le contenu déchiffré s'ajoute sous le formulaire.
+  function loaded(){
+    return document.readyState === 'complete' ? Promise.resolve()
+      : new Promise(function(r){ window.addEventListener('load', r, {once:true}); });
+  }
+  async function show(htmlText){
+    await loaded();
     var t = htmlText.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
     document.open(); document.write(htmlText); document.close();
     if (t){ var d = document.createElement('textarea'); d.innerHTML = t[1]; document.title = d.value.trim(); }
@@ -89,7 +96,9 @@ noscript{color:var(--err)}
   (async function(){
     var raw = readStored();
     if (!raw) return;
-    try { show(await unlock(raw)); } catch(e){ forget(); $('err').textContent = 'Le mot de passe a changé. Entrez le nouveau mot de passe.'; }
+    $('f').style.visibility = 'hidden';   // pas de formulaire visible pendant l'ouverture automatique
+    try { await show(await unlock(raw)); }
+    catch(e){ forget(); $('f').style.visibility = ''; $('err').textContent = 'Le mot de passe a changé. Entrez le nouveau mot de passe.'; }
   })();
 
   $('f').addEventListener('submit', async function(ev){
@@ -99,7 +108,7 @@ noscript{color:var(--err)}
       var raw = await derive($('pw').value);
       var text = await unlock(raw);
       store(raw, $('rem').checked);
-      show(text);
+      await show(text);
     } catch(e){
       $('err').className = 'err'; $('err').textContent = 'Mot de passe incorrect.';
       $('go').disabled = false; $('pw').select();
